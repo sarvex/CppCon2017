@@ -13,14 +13,14 @@ def shell_call(cmd):
     process = subprocess.Popen(cmd, shell=True)
     process.wait()
     if process.returncode:
-        print("'{}' failed.".format(cmd))
+        print(f"'{cmd}' failed.")
         print("Exit code:", process.returncode)
 
         exit(process.returncode)
 
 
 def add_index(readme, category):
-    readme.write("\n## {}\n\n".format(category).encode())
+    readme.write(f"\n## {category}\n\n".encode())
     generate_index(readme, category)
 
 
@@ -42,15 +42,13 @@ def make_readme(readme):
 
 def generate_entry(readme, session_name, path):
     def get_author_from_filename(path):
-        author_regex = re.compile(".* - (.*) - CppCon " + str(CPPCON_YEAR) +
-                                    "\\.[^.]*$")
+        author_regex = re.compile(
+            (f".* - (.*) - CppCon {str(CPPCON_YEAR)}" + "\\.[^.]*$")
+        )
 
         author = author_regex.search(path)
 
-        if author:
-            return author.group(1)
-
-        return ""
+        return author[1] if author else ""
 
     def get_author_from_readme_md(path):
         readme_header_regex = re.compile(r"\*\*(.*)\*\* by \*\*(.*)\*\*")
@@ -60,15 +58,14 @@ def generate_entry(readme, session_name, path):
             match = readme_header_regex.match(header)
 
             if match:
-                return match.group(2)
+                return match[2]
 
         return ""
 
     def md_path(path):
         return quote(normpath(path).replace('\\', '/'))
 
-    presentation_regex = re.compile("- CppCon " + str(CPPCON_YEAR) +
-                                    "\\.[^.]*$")
+    presentation_regex = re.compile((f"- CppCon {str(CPPCON_YEAR)}" + "\\.[^.]*$"))
     pdf_regex = re.compile("\\.pdf$", flags=re.I)
     readme_md_regex = re.compile("README\\.md$")
 
@@ -164,19 +161,17 @@ def add_presentation(path):
 
         with open(filename, mode='rb') as readme:
             heading = readme.readline().decode()
-            match = readme_header_regex.match(heading)
-
-            if match:
-                title = match.group(1)
-                author = match.group(2)
+            if match := readme_header_regex.match(heading):
+                title = match[1]
+                author = match[2]
     else:
-        title_author_regex = re.compile("(.*) - (.*) - CppCon " +
-                                        str(CPPCON_YEAR) + r"\.[^.]*$")
+        title_author_regex = re.compile(
+            f"(.*) - (.*) - CppCon {str(CPPCON_YEAR)}" + r"\.[^.]*$"
+        )
 
-        title_author_match = title_author_regex.search(filename)
-        if title_author_match:
-            title = title_author_match.group(1)
-            author = title_author_match.group(2)
+        if title_author_match := title_author_regex.search(filename):
+            title = title_author_match[1]
+            author = title_author_match[2]
 
         print("\nExtension is", ext)
 
@@ -197,14 +192,13 @@ def add_presentation(path):
             author = input("Author: ")
 
         if filename != 'README.md':
-            new_filename = "{} - {} - CppCon 2017{}".format(title, author,
-                                                            ext)
+            new_filename = f"{title} - {author} - CppCon 2017{ext}"
         else:
             new_filename = filename
             contents = None
             with open(filename, mode='rb') as readme:
                 contents = readme.readlines()
-            contents[0] = '**{}** by **{}**'.format(title, author).encode()
+            contents[0] = f'**{title}** by **{author}**'.encode()
             with open(filename, mode='wb') as readme:
                 readme.writelines(contents)
         if any((c in "\\/:*?”<>|") for c in new_filename):
@@ -217,7 +211,7 @@ def add_presentation(path):
     new_path = join(new_folder, new_filename)
     makedirs(new_folder, exist_ok=True)
     rename(path, new_path)
-    shell_call('git add "{}"'.format(new_path))
+    shell_call(f'git add "{new_path}"')
 
     return title, author
 
@@ -237,6 +231,6 @@ if __name__ == '__main__':
 
     shell_call('git add README.md')
     if TITLE and AUTHOR:
-        shell_call('git commit -v -m "Add {} by {}" -e'.format(TITLE, AUTHOR))
+        shell_call(f'git commit -v -m "Add {TITLE} by {AUTHOR}" -e')
     else:
         shell_call('git commit -v -m "Updating index" -e')
